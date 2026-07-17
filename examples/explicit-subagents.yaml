@@ -1,0 +1,49 @@
+version: 1
+name: explicit-subagents-example
+objective: Improve one CLI behavior with focused tests and no unrelated refactoring.
+workspace: ..
+
+supervisor:
+  instructions: >-
+    Start with repository evidence, create at most two competing candidates when the tradeoff is
+    real, require deterministic evaluation, and assign an independent reviewer before accepting.
+
+roles:
+  - id: investigator
+    kind: research
+    description: Finds the relevant control flow, tests, and repository constraints.
+    instructions: Cite concrete files and behavior. Do not propose broad redesigns or edit files.
+    maxInstances: 1
+    maxTurns: 2
+
+  - id: implementer
+    kind: candidate
+    description: Owns one isolated implementation candidate.
+    instructions: Make the smallest coherent change and add or update focused tests.
+    maxInstances: 2
+    maxTurns: 3
+
+  - id: reviewer
+    kind: review
+    description: Reviews one candidate independently and read-only.
+    instructions: Check correctness, regression risk, scope, and whether tests prove the behavior.
+    maxInstances: 2
+    maxTurns: 2
+
+evaluation:
+  command: ["pnpm", "test"]
+  timeoutSeconds: 600
+
+limits:
+  maxRounds: 6
+  maxConcurrentAgents: 2
+  maxTotalAgents: 6
+  maxTotalAgentTurns: 12
+  maxWallClockSeconds: 1800
+  turnTimeoutSeconds: 600
+  maxTotalTokens: 120000
+
+codex:
+  binary: codex
+  ignoreUserConfig: true
+  maxOutputBytes: 20971520

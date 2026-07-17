@@ -1,0 +1,69 @@
+{
+  "name": "aiur-orchestrator",
+  "version": "0.1.0",
+  "description": "A personal Effect v4 harness for explicitly scoped, subscription-backed Codex subagents",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daoa0601/aiur-orchestrator.git"
+  },
+  "homepage": "https://github.com/daoa0601/aiur-orchestrator#readme",
+  "bugs": "https://github.com/daoa0601/aiur-orchestrator/issues",
+  "packageManager": "pnpm@11.13.1",
+  "files": [
+    "dist",
+    "docs",
+    "examples",
+    "scripts/quality/require-pnpm.mjs",
+    "README.md",
+    "QUALITY.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0",
+    "pnpm": "11.13.1"
+  },
+  "bin": {
+    "aiur": "./dist/cli.js"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./control-plane": "./dist/control-plane.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "pnpm quality:quick && pnpm test",
+    "deps:audit": "pnpm audit --prod --audit-level high",
+    "deps:check": "pnpm deps:audit && pnpm deps:signatures",
+    "deps:signatures": "pnpm audit signatures",
+    "format": "prettier --write . --ignore-unknown",
+    "format:check": "prettier --check . --ignore-unknown",
+    "aiur": "pnpm build && node --enable-source-maps dist/cli.js",
+    "hooks:install": "node scripts/quality/install-hooks.mjs",
+    "lint": "oxlint src tests scripts vitest.config.ts --deny-warnings",
+    "pack:check": "node scripts/quality/check-pack.mjs",
+    "preflight": "pnpm quality",
+    "preinstall": "node scripts/quality/require-pnpm.mjs",
+    "quality": "pnpm quality:offline && pnpm deps:check",
+    "quality:offline": "pnpm quality:quick && pnpm test:coverage && pnpm build && pnpm pack:check",
+    "quality:quick": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm secrets:scan",
+    "secrets:scan": "node scripts/quality/scan-secrets.mjs",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "effect": "4.0.0-beta.98",
+    "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1",
+    "@vitest/coverage-v8": "4.1.10",
+    "oxlint": "1.74.0",
+    "prettier": "3.9.5",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  }
+}
