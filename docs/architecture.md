@@ -9,7 +9,7 @@ The scoped-worktree template below is one opinionated consumer of the package, n
 the generic root.
 
 The harness separates a deterministic control plane from an interchangeable model-turn runtime.
-Codex can reason, inspect, and edit inside a supplied scope; it cannot allocate scopes, increase
+The selected runtime can reason, inspect, and edit inside a supplied scope; it cannot allocate scopes, increase
 limits, select arbitrary roles, run evaluator commands, or decide how state is persisted.
 
 ```mermaid
@@ -59,10 +59,11 @@ An `agentId` is durable within one run. Its first assignment binds:
 - the configured role and role kind;
 - the working directory and sandbox mode;
 - a candidate ID or review target, if applicable;
-- a Codex thread ID after the first successful turn.
+- a runtime session/thread ID after the first successful turn.
 
-Later assignments to the same ID call `codex exec resume`. The resume subcommand retains its
-original working directory and sandbox, which matches the harness's immutable binding rule.
+Later assignments to the same ID resume that runtime session. The Codex and OpenCode adapters both
+retain the original working directory and sandbox/policy, which matches the harness's immutable
+binding rule.
 
 Workers cannot create other workers. Only the supervisor can request a new logical agent, and the
 deterministic validator decides whether that request is legal.
@@ -74,7 +75,7 @@ deterministic validator decides whether that request is legal.
 - Candidate/research work in a batch completes before its pinned review work. Candidate traces,
   patches, and deterministic evaluations are therefore current before review starts, without a
   candidate racing the reviewer over trusted audit state.
-- A run-wide `Semaphore` limits concurrent Codex child processes.
+- A run-wide `Semaphore` limits concurrent runtime child processes.
 - Child processes are wrapped in `Effect.tryPromise`; interruption propagates through its abort
   signal and terminates the child.
 - A `Ref` atomically accounts for rounds, logical agents, worker turns, and budget-charged tokens (non-cached input plus output). Raw and cached usage remain durable event fields.
@@ -85,7 +86,7 @@ worktrees unless `--keep-worktrees` was explicit.
 
 The low-level no-shell process, bounded-output, timeout, and cancellation implementation comes from
 `@agentic-orch/node-guardrails/process`. Agent Blocks wraps that neutral Promise/`AbortSignal` contract with Effect
-and retains ownership of Codex events, budgets, retries, lifecycle scopes, and public errors.
+and retains ownership of runtime events, budgets, retries, lifecycle scopes, and public errors.
 
 On POSIX, each child leads an isolated process group. A timeout, abort, or output-limit failure sends
 graceful and then forced termination to that group, including descendants that retain inherited
@@ -123,11 +124,16 @@ interruption append terminal `run.failed` records. This makes queued, running, f
 runs queryable without `summary.json`. `summary.json` remains the validated compatibility artifact
 for accepted, stopped, and budget-limited runs.
 
-The private journal retains normalized lifecycle records and original Codex JSONL events tagged with
-logical agent and thread IDs. `inspectRunState`, `listRuns`, and `readRunEvents` replay it into a safe
-projection. Public event reads omit raw Codex events and recursively remove prompts, session/thread
+The private journal retains normalized lifecycle records and original runtime JSONL events tagged
+with logical agent and session/thread IDs. `inspectRunState`, `listRuns`, and `readRunEvents` replay it into a safe
+projection. Public event reads omit raw runtime events and recursively remove prompts, session/thread
 IDs, host paths, worktree locations, and evaluator output. Newest-first listing uses creation time and
 the run ID as a deterministic tie-breaker.
+
+New records use `runtime.raw_event` with the non-secret adapter ID. The decoder and public filter
+continue to recognize legacy `codex.raw_event` records. `run.started` also captures the runtime
+adapter, binary label, user-config isolation flag, output cap, and short tool-policy label; it never
+captures credentials or command arguments.
 
 Private `harness.private.*` records retain candidate trace and audit-materialization provenance but
 are omitted entirely from public event reads. Neither the public event projection nor the compact run
@@ -185,6 +191,6 @@ reused, but separate processes must not share active ownership of one harness ho
 Cooperative fiber cancellation runs the harness finalizer and records `run.failed` with interruption
 metadata after scoped worktree cleanup. A non-cooperative process death such as `SIGKILL`, power loss,
 or storage failure cannot append a terminal record and may leave the last durable projection queued or
-running. On restart, the harness replays durable records only; it never infers continuation from Codex
-prose or session files. A future release needs a writer lease/recovery protocol to identify and mark
+running. On restart, the harness replays durable records only; it never infers continuation from model
+prose or runtime session files. A future release needs a writer lease/recovery protocol to identify and mark
 hard-crash orphans safely.

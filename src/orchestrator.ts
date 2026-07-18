@@ -303,13 +303,15 @@ function appendRuntimeEvents(
   journal: RunJournal,
   agentId: string,
   threadId: string,
+  adapter: string,
   events: ReadonlyArray<unknown>,
 ): Effect.Effect<void, JournalError> {
   return Effect.forEach(
     events,
     (rawEvent) =>
       journal.append({
-        type: "codex.raw_event",
+        type: "runtime.raw_event",
+        adapter,
         agentId,
         threadId,
         rawEvent,
@@ -352,6 +354,8 @@ function executeWorker(options: {
       agentId: agent.agentId,
       roleId: agent.role.id,
       roleKind: agent.role.kind,
+      model: agent.role.model ?? null,
+      sandbox: agent.sandbox,
       turn: agent.turns,
       candidateId: agent.candidateId,
       targetCandidateId: agent.targetCandidateId,
@@ -412,7 +416,13 @@ function executeWorker(options: {
 
     const turn = runtimeResult.success;
     agent.threadId = turn.threadId;
-    yield* appendRuntimeEvents(options.journal, agent.agentId, turn.threadId, turn.events);
+    yield* appendRuntimeEvents(
+      options.journal,
+      agent.agentId,
+      turn.threadId,
+      options.runtime.metadata?.adapter ?? "injected",
+      turn.events,
+    );
 
     let report: AgentReport | undefined;
     let parseError: string | undefined;
@@ -516,6 +526,20 @@ export function runOrchestration(
       workspace: base.root,
       baseHead: base.head,
       limits: options.workflow.limits,
+      runtime: runtime.metadata ?? {
+        adapter: "injected",
+        binary: null,
+        ignoreUserConfig: null,
+        maxOutputBytes: null,
+        toolPolicy: "unspecified",
+      },
+      models: {
+        supervisor: options.workflow.supervisor.model ?? null,
+        roles: options.workflow.roles.map((role) => ({
+          roleId: role.id,
+          model: role.model ?? null,
+        })),
+      },
       keepWorktrees,
       applyRequested: shouldApply,
     });
@@ -540,7 +564,12 @@ export function runOrchestration(
         }
         const round = yield* budget.beginRound();
 
-        yield* journal.append({ type: "supervisor.turn_started", round });
+        yield* journal.append({
+          type: "supervisor.turn_started",
+          round,
+          model: options.workflow.supervisor.model ?? null,
+          sandbox: "read-only",
+        });
         const supervisorTurn = yield* runtime.runTurn({
           agentId: "supervisor",
           cwd: base.root,
@@ -562,6 +591,7 @@ export function runOrchestration(
           journal,
           "supervisor",
           supervisorTurn.threadId,
+          runtime.metadata?.adapter ?? "injected",
           supervisorTurn.events,
         );
         const supervisorCharge = yield* Effect.result(

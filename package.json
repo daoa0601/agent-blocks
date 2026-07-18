@@ -1,6 +1,6 @@
 {
   "name": "@agentic-orch/agent-blocks",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Local agent, runtime, and orchestrator template building blocks",
   "type": "module",
@@ -50,6 +50,11 @@
       "types": "./dist/templates/scoped-worktree-codex-cli.d.ts",
       "import": "./dist/templates/scoped-worktree-codex-cli.js",
       "default": "./dist/templates/scoped-worktree-codex-cli.js"
+    },
+    "./templates/scoped-worktree/adapters/opencode-cli": {
+      "types": "./dist/templates/scoped-worktree-opencode-cli.d.ts",
+      "import": "./dist/templates/scoped-worktree-opencode-cli.js",
+      "default": "./dist/templates/scoped-worktree-opencode-cli.js"
     },
     "./package.json": "./package.json"
   },

@@ -229,7 +229,7 @@ describe("public run control surface", () => {
       ),
     ).toBe(true);
     const publicJson = JSON.stringify(publicEvents);
-    expect(publicJson).not.toContain("codex.raw_event");
+    expect(publicJson).not.toContain("runtime.raw_event");
     expect(publicJson).not.toContain("raw-private-prompt");
     expect(publicJson).not.toContain("raw-private-session");
     expect(publicJson).not.toContain("private-supervisor-thread");
@@ -240,7 +240,7 @@ describe("public run control surface", () => {
     expect(publicJson).not.toContain(summary.candidates[0]!.patchPath);
 
     const rawJournal = await readFile(path.join(summary.runDirectory, "events.jsonl"), "utf8");
-    expect(rawJournal).toContain("codex.raw_event");
+    expect(rawJournal).toContain("runtime.raw_event");
     expect(rawJournal).toContain("raw-private-prompt");
     expect(rawJournal).toContain("private-supervisor-thread");
 
