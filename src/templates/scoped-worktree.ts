@@ -9,6 +9,7 @@ export * from "../errors.js";
 export * from "../evaluator.js";
 export * from "../inspect.js";
 export * from "../orchestrator.js";
+export * from "../opencode-runtime.js";
 export * from "../process-runner.js";
 export * from "../prompts.js";
 export * from "../runtime.js";

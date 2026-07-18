@@ -9,13 +9,14 @@ This repository is a local workspace module. It is not intended for npm publicat
 
 ## Public boundaries
 
-| Import                                                                    | Owns                                                                                               |
-| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `@agentic-orch/agent-blocks`                                              | Generic agents, templates, members, teams, organizations, and composition helpers.                 |
-| `@agentic-orch/agent-blocks/persistence`                                  | Validated append-only run journals and safe run IDs.                                               |
-| `@agentic-orch/agent-blocks/templates/scoped-worktree`                    | The existing bounded supervisor, Codex runtime, Git worktrees, evaluation, and selection workflow. |
-| `@agentic-orch/agent-blocks/templates/scoped-worktree/control-plane`      | Redacted queries over scoped-worktree run state and events.                                        |
-| `@agentic-orch/agent-blocks/templates/scoped-worktree/adapters/codex-cli` | The Codex CLI adapter used by that template.                                                       |
+| Import                                                                       | Owns                                                                                               |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `@agentic-orch/agent-blocks`                                                 | Generic agents, templates, members, teams, organizations, and composition helpers.                 |
+| `@agentic-orch/agent-blocks/persistence`                                     | Validated append-only run journals and safe run IDs.                                               |
+| `@agentic-orch/agent-blocks/templates/scoped-worktree`                       | The existing bounded supervisor, Codex runtime, Git worktrees, evaluation, and selection workflow. |
+| `@agentic-orch/agent-blocks/templates/scoped-worktree/control-plane`         | Redacted queries over scoped-worktree run state and events.                                        |
+| `@agentic-orch/agent-blocks/templates/scoped-worktree/adapters/codex-cli`    | The Codex CLI adapter used by that template.                                                       |
+| `@agentic-orch/agent-blocks/templates/scoped-worktree/adapters/opencode-cli` | A deny-by-default OpenCode CLI adapter for explicit provider/model runtimes.                       |
 
 The root does not export scoped-worktree types. Consumers must opt into that template explicitly,
 which prevents a generic research agent from accidentally inheriting Git-worktree or candidate
@@ -95,6 +96,20 @@ The included template retains the original, security-conscious coding workflow:
 
 The Codex adapter uses the locally authenticated Codex CLI. Prompts travel over stdin and this
 package never reads, copies, or stores ChatGPT credentials.
+
+The optional OpenCode adapter is programmatic rather than a workflow-YAML setting. It requires an
+explicit qualified provider/model ID, uses OpenCode's existing local provider authentication, and
+does not read or copy that credential. It isolates authored configuration, disables sharing and
+ambient plugins, strips unrelated environment values, and supplies a deny-by-default tool policy.
+Read-only turns can inspect/search the assigned workspace except common environment, credential,
+private-key, and OpenCode configuration files; writable turns may edit only inside the candidate
+worktree and run a very small fixed command allowlist. Web access, subagents, skills, LSP, questions,
+and external-directory access are denied. Raw events and non-secret runtime metadata are retained in
+the private journal.
+
+These are OpenCode application permissions, not an OS containment boundary. Use an independently
+enforced sandbox, container, or VM whenever the workspace itself may contain hostile executable
+content.
 
 ### Local checkout
 

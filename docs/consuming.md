@@ -64,16 +64,26 @@ import {
   readRunEvents,
 } from "@agentic-orch/agent-blocks/templates/scoped-worktree/control-plane";
 import { readRunEventRecords } from "@agentic-orch/agent-blocks/persistence";
+import { makeOpenCodeRuntime } from "@agentic-orch/agent-blocks/templates/scoped-worktree/adapters/opencode-cli";
 
 const program = Effect.gen(function* () {
   const workflow = yield* loadWorkflow("workflow.yaml");
+  const runtime = makeOpenCodeRuntime({ binary: "opencode", maxOutputBytes: 12 * 1024 * 1024 });
   return yield* runOrchestration({
     workflow,
+    runtime,
     apply: false,
     keepWorktrees: false,
   });
 });
 ```
+
+`runOrchestration` defaults to the scoped-worktree Codex adapter. A trusted local application may
+inject `makeOpenCodeRuntime({ binary, maxOutputBytes })` through the `runtime` option and must provide
+an explicit qualified provider/model such as `zai-coding-plan/glm-5.2` in the workflow roles and
+supervisor. The adapter uses OpenCode's existing authentication store without reading or copying its
+credential. It isolates authored configuration and applies a deny-by-default workspace policy; that
+policy is not a substitute for an OS sandbox or VM.
 
 Network-facing integrations should prefer the redacted control-plane projection. The private
 journal reader exposes raw trusted records and belongs only in trusted local code.

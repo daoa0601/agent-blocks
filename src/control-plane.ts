@@ -106,7 +106,11 @@ function redactValue(value: unknown): unknown {
 }
 
 function publicEvent(record: RunEventRecord): PublicRunEvent | undefined {
-  if (record.type === "codex.raw_event" || record.type.startsWith("harness.private.")) {
+  if (
+    record.type === "codex.raw_event" ||
+    record.type === "runtime.raw_event" ||
+    record.type.startsWith("harness.private.")
+  ) {
     return undefined;
   }
   const redacted = redactValue(record);

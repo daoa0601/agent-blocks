@@ -102,6 +102,13 @@ export function buildCodexArgs(
 
 export function makeCodexRuntime(definition: CodexDefinition): AgentRuntime {
   return {
+    metadata: {
+      adapter: "codex-cli",
+      binary: definition.binary,
+      ignoreUserConfig: definition.ignoreUserConfig,
+      maxOutputBytes: definition.maxOutputBytes,
+      toolPolicy: "codex-sandbox",
+    },
     runTurn: (input): Effect.Effect<RuntimeTurnResult, RuntimeError> =>
       Effect.gen(function* () {
         const result = yield* runProcess({

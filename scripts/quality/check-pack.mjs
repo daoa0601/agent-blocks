@@ -43,6 +43,11 @@ expectMetadata(
   "scoped-worktree control plane must expose its built ESM entry",
 );
 expectMetadata(
+  packageJson.exports?.["./templates/scoped-worktree/adapters/opencode-cli"]?.import ===
+    "./dist/templates/scoped-worktree-opencode-cli.js",
+  "scoped-worktree OpenCode adapter must expose its built ESM entry",
+);
+expectMetadata(
   packageJson.dependencies?.effect === undefined,
   "effect must not be a bundled runtime dependency",
 );

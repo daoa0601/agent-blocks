@@ -36,6 +36,13 @@ describe("orchestrator", () => {
     let candidateTurns = 0;
 
     const runtime: AgentRuntime = {
+      metadata: {
+        adapter: "test-runtime",
+        binary: null,
+        ignoreUserConfig: true,
+        maxOutputBytes: null,
+        toolPolicy: "scripted",
+      },
       runTurn: (input) =>
         Effect.tryPromise({
           try: async () => {
@@ -114,7 +121,7 @@ describe("orchestrator", () => {
       configPath: path.join(repository, "workflow.yaml"),
       workspace: repository,
       allowDirtyWorkspace: false,
-      supervisor: { instructions: "Use the builder and require tests.", model: undefined },
+      supervisor: { instructions: "Use the builder and require tests.", model: "supervisor-model" },
       roles: [
         {
           id: "builder",
@@ -123,7 +130,7 @@ describe("orchestrator", () => {
           instructions: "Make only the assigned edit.",
           maxInstances: 1,
           maxTurns: 2,
-          model: undefined,
+          model: "builder-model",
         },
       ],
       limits: {
@@ -167,6 +174,33 @@ describe("orchestrator", () => {
     expect(builderCalls.map((call) => call.threadId)).toEqual([undefined, "builder-thread"]);
     expect(builderCalls.every((call) => call.sandbox === "workspace-write")).toBe(true);
     expect(supervisorCalls.every((call) => call.sandbox === "read-only")).toBe(true);
+    expect(builderCalls.every((call) => call.model === "builder-model")).toBe(true);
+    expect(supervisorCalls.every((call) => call.model === "supervisor-model")).toBe(true);
+
+    const journal = (await readFile(path.join(summary.runDirectory, "events.jsonl"), "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    expect(journal.find((event) => event.type === "run.started")).toMatchObject({
+      runtime: {
+        adapter: "test-runtime",
+        binary: null,
+        ignoreUserConfig: true,
+        toolPolicy: "scripted",
+      },
+      models: {
+        supervisor: "supervisor-model",
+        roles: [{ roleId: "builder", model: "builder-model" }],
+      },
+    });
+    expect(journal.find((event) => event.type === "supervisor.turn_started")).toMatchObject({
+      model: "supervisor-model",
+      sandbox: "read-only",
+    });
+    expect(journal.find((event) => event.type === "agent.turn_started")).toMatchObject({
+      model: "builder-model",
+      sandbox: "workspace-write",
+    });
 
     const cleanedWorktree = path.join(harnessHome, "worktrees", summary.runId, "builder-1");
     await expect(readFile(path.join(cleanedWorktree, "answer.txt"), "utf8")).rejects.toThrow();

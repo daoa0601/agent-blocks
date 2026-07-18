@@ -6,18 +6,23 @@ boundary for hostile tenants or hostile evaluator configuration.
 ## Enforced by the harness
 
 - Model prompts are written to child-process stdin, not argv.
-- Codex is never started with sandbox-bypass or approval-bypass flags.
-- Base and review threads use `read-only`; candidates use `workspace-write` only in isolated Git
-  worktrees.
+- Codex is never started with sandbox-bypass or approval-bypass flags. The OpenCode adapter supplies
+  an explicit deny-by-default permission policy and never uses `--auto`.
+- Base and review turns use `read-only`; candidates use `workspace-write` only in isolated Git
+  worktrees. OpenCode additionally denies external directories, web access, subagents, skills, LSP,
+  questions, common environment/credential/private-key files, and commands outside its fixed local
+  allowlist.
 - Role, workspace, and review-target bindings are immutable after an agent's first turn.
 - The supervisor can select only configured roles and cannot supply executable evaluator commands.
 - Child-process commands use argv arrays with `shell: false`.
 - Concurrency, rounds, agents, turns, time, output bytes, and optional tokens are bounded.
 - Candidate application is explicit and guarded by HEAD, cleanliness, and `git apply --check`.
-- Credentials remain owned by the Codex CLI. The harness records only thread IDs and events.
+- Credentials remain owned by the selected local CLI. The harness never reads or copies ChatGPT or
+  OpenCode provider credentials; it records only non-secret runtime metadata, session/thread IDs,
+  and events.
 - Caller-supplied run IDs use a bounded safe syntax and exclusive allocation; an existing run
   directory is never silently reused.
-- Public run queries replay validated journal records and exclude raw Codex events while recursively
+- Public run queries replay validated journal records and exclude raw runtime events while recursively
   removing prompts, thread/session IDs, absolute host paths, worktree locations, evaluator output,
   and other private transport fields.
 - Candidate prompts reserve `.harness-audit/`; candidate turns start with an empty harness-created
@@ -29,8 +34,8 @@ boundary for hostile tenants or hostile evaluator configuration.
 
 ## Trusted inputs
 
-The workflow author controls the evaluator argv, workspace path, Codex binary path, role prompts,
-and whether user Codex configuration is enabled. A malicious workflow author already has local
+The workflow author controls the evaluator argv, workspace path, runtime binary path, role prompts,
+runtime injection, and whether user Codex configuration is enabled. A malicious workflow author already has local
 code-execution authority through the evaluator.
 
 Project instructions inside the target repository may influence Codex. The harness scope and
@@ -38,7 +43,7 @@ budgets remain authoritative even when instructions conflict.
 
 ## Sensitive artifacts
 
-Raw Codex events, agent reports, evaluator output, and patches may contain proprietary source,
+Raw runtime events, agent reports, evaluator output, and patches may contain proprietary source,
 paths, or secrets already present in command output. Keep `$AGENT_BLOCKS_HOME` private and apply your own
 retention policy. Do not publish run archives automatically.
 
@@ -58,9 +63,12 @@ read-only projections and keep authentication/authorization outside browser-cont
 
 ## Known prototype limitations
 
-- Filesystem isolation relies on Codex's local sandbox and Git worktrees, not a VM or container.
-- Network policy is whatever the selected Codex sandbox/runtime provides.
-- Codex stores its resumable sessions in its own local state in addition to the harness journal.
+- Filesystem isolation relies on the selected CLI's application policy and Git worktrees, not a VM
+  or container. OpenCode's permission map is useful policy enforcement but is not an OS sandbox.
+- Network policy is whatever the selected runtime actually enforces. The OpenCode adapter denies its
+  web tools, but that does not provide kernel-level egress isolation for hostile processes.
+- Codex and OpenCode store resumable sessions in their own local state in addition to the harness
+  journal.
 - Process termination is lifecycle cleanup, not containment. On POSIX, failures terminate the
   isolated process group, but hostile code may attempt to escape that group. On Windows, the
   portable implementation terminates only the direct child and closes Agent Blocks's pipe endpoints, so

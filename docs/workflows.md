@@ -30,7 +30,7 @@ Every role has `id`, `kind`, `description`, and `instructions`. Optional fields 
 
 - `maxInstances` — default `1`;
 - `maxTurns` — default `2` per logical agent;
-- `model` — an explicit Codex model override.
+- `model` — an explicit runtime model override.
 
 Role and agent IDs are separate. For example, role `implementer` may have candidate agents
 `candidate-a` and `candidate-b` when `maxInstances` permits two.
@@ -44,7 +44,7 @@ Role and agent IDs are separate. For example, role `implementer` may have candid
 | `maxTotalAgents`      |       8 | Unique worker `agentId` values.                                                                                                                                            |
 | `maxTotalAgentTurns`  |      16 | Worker turns, including failed attempts.                                                                                                                                   |
 | `maxWallClockSeconds` |    1800 | Entire supervisor loop.                                                                                                                                                    |
-| `turnTimeoutSeconds`  |     600 | One supervisor or worker Codex invocation.                                                                                                                                 |
+| `turnTimeoutSeconds`  |     600 | One supervisor or worker runtime invocation.                                                                                                                               |
 | `maxTotalTokens`      |   unset | Non-cached input plus output tokens across supervisor and workers. Raw and cached counts remain in runtime events; turn and wall-clock caps still bound cached tool loops. |
 
 No prompt or model decision can change these limits.
@@ -82,3 +82,26 @@ codex:
 `ignoreUserConfig: true` is the deterministic default. Codex still uses its local authentication,
 but unrelated user configuration is not layered into agent runs. Set it to `false` intentionally if
 you need your configured model/provider/features.
+
+## OpenCode adapter
+
+OpenCode is an explicit programmatic runtime, not a workflow-YAML field:
+
+```ts
+import { makeOpenCodeRuntime } from "@agentic-orch/agent-blocks/templates/scoped-worktree/adapters/opencode-cli";
+
+const runtime = makeOpenCodeRuntime({
+  binary: "opencode",
+  maxOutputBytes: 12 * 1024 * 1024,
+});
+```
+
+Pass `runtime` to `runOrchestration` and use qualified `provider/model` values in supervisor and role
+definitions. The adapter keeps prompts off argv, uses the provider login already owned by OpenCode,
+isolates authored configuration, disables ambient plugins and sharing, and applies a deny-by-default
+workspace tool policy. It records non-secret adapter/model/sandbox metadata and raw runtime events in
+the private journal. An empty-output startup `database is locked` failure may be retried twice; a
+partially generated turn is never retried.
+
+OpenCode permissions are an application-level boundary. Place hostile inputs behind an independent
+OS sandbox, container, or VM, and enforce network policy outside the model CLI.
