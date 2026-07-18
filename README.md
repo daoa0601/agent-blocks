@@ -11,7 +11,7 @@ This repository is a local workspace module. It is not intended for npm publicat
 
 | Import                                                                    | Owns                                                                                               |
 | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `@agentic-orch/agent-blocks`                                              | Generic `Agent`, `AgentRuntime`, `AgentTemplate`, and composition helpers.                         |
+| `@agentic-orch/agent-blocks`                                              | Generic agents, templates, members, teams, organizations, and composition helpers.                 |
 | `@agentic-orch/agent-blocks/persistence`                                  | Validated append-only run journals and safe run IDs.                                               |
 | `@agentic-orch/agent-blocks/templates/scoped-worktree`                    | The existing bounded supervisor, Codex runtime, Git worktrees, evaluation, and selection workflow. |
 | `@agentic-orch/agent-blocks/templates/scoped-worktree/control-plane`      | Redacted queries over scoped-worktree run state and events.                                        |
@@ -42,6 +42,42 @@ const triple = instantiateTemplate(multiplier, 3);
 An orchestrator supplies the `AgentContext`, owns scheduling and policy, and decides how emitted
 events are persisted. Templates are ordinary factories, so projects can start from a local recipe
 and extend it without modifying this package.
+
+### Members, teams, and organizations
+
+Agent Blocks also provides a domain-neutral ownership hierarchy for larger systems. A block belongs
+to one explicit member, a member belongs to one team, and teams form an organization. Domain
+packages decide what those names mean; Agent Blocks only validates unambiguous ownership.
+
+```ts
+import {
+  agentBlockAssignments,
+  defineAgentMember,
+  defineAgentOrganization,
+  defineAgentTeam,
+} from "@agentic-orch/agent-blocks";
+
+const security = defineAgentOrganization({
+  id: "security",
+  teams: [
+    defineAgentTeam({
+      id: "review",
+      members: [
+        defineAgentMember({
+          id: "evidence-specialist",
+          blocks: [{ id: "collect-evidence" }],
+        }),
+      ],
+    }),
+  ],
+});
+
+const assignments = agentBlockAssignments(security);
+```
+
+Block IDs are unique across an organization, member IDs are unique within a team, and team IDs are
+unique within the organization. The returned roster snapshots its arrays so later configuration
+mutation cannot silently change ownership.
 
 ## Scoped-worktree template
 

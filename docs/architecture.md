@@ -1,5 +1,13 @@
 # Architecture
 
+The package root is domain-neutral. Its composition hierarchy is
+`AgentBlock -> AgentMember -> AgentTeam -> AgentOrganization`: a block has one explicit owner, a
+member belongs to one team, and teams form a roster. Agent Blocks validates unique IDs and exposes
+flattened assignments; consumers define team meaning, permissions, sequencing, and runtime policy.
+
+The scoped-worktree template below is one opinionated consumer of the package, not the meaning of
+the generic root.
+
 The harness separates a deterministic control plane from an interchangeable model-turn runtime.
 Codex can reason, inspect, and edit inside a supplied scope; it cannot allocate scopes, increase
 limits, select arbitrary roles, run evaluator commands, or decide how state is persisted.
