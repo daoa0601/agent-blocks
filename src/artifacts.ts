@@ -1,12 +1,15 @@
-import { createHash } from "node:crypto";
-import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { ContentAddressedFileStore } from "@agentic-orch/node-guardrails/cas";
 import { Effect } from "effect";
 
 import { JournalError } from "./errors.js";
 
 export const PATCH_MEDIA_TYPE = "text/x-diff";
+
+// captureCandidatePatch is bounded by the same 20 MiB Git output ceiling. Keep publication
+// independently bounded so direct callers cannot bypass that workflow invariant.
+const PATCH_ARTIFACT_MAX_BYTES = 20 * 1024 * 1024;
 
 export interface PublishedPatchArtifact {
   readonly artifactId: string;
@@ -23,35 +26,21 @@ export function publishPatchArtifact(options: {
 }): Effect.Effect<PublishedPatchArtifact, JournalError> {
   return Effect.tryPromise({
     try: async () => {
-      const bytes = await readFile(options.patchPath);
-      const digest = createHash("sha256").update(bytes).digest("hex");
-      const artifactPath = path.join(options.artifactsDirectory, `${digest}.patch`);
-      await mkdir(options.artifactsDirectory, { recursive: true });
-      try {
-        await writeFile(artifactPath, bytes, { flag: "wx" });
-      } catch (cause) {
-        if (
-          typeof cause !== "object" ||
-          cause === null ||
-          !("code" in cause) ||
-          cause.code !== "EEXIST"
-        ) {
-          throw cause;
-        }
-        const existingStat = await lstat(artifactPath);
-        if (!existingStat.isFile()) {
-          throw new Error(`Existing artifact ${digest} is not a regular file`);
-        }
-        const existing = await readFile(artifactPath);
-        const existingDigest = createHash("sha256").update(existing).digest("hex");
-        if (existingDigest !== digest) {
-          throw new Error(`Existing artifact ${digest} does not match its content address`);
-        }
-      }
+      const store = new ContentAddressedFileStore({
+        root: options.artifactsDirectory,
+        maxBytes: PATCH_ARTIFACT_MAX_BYTES,
+        extension: ".patch",
+        allowEmpty: true,
+      });
+      const stored = await store.stageFile(options.patchPath, PATCH_ARTIFACT_MAX_BYTES);
+
+      // The path is a private journal compatibility field, not a CAS verification result. The CAS
+      // already verified publication through its open handle; do not reopen the pathname here.
+      const artifactPath = path.join(options.artifactsDirectory, `${stored.digest}.patch`);
       return {
-        artifactId: digest,
-        digest,
-        size: bytes.byteLength,
+        artifactId: stored.digest,
+        digest: stored.digest,
+        size: stored.size,
         mediaType: PATCH_MEDIA_TYPE,
         artifactPath,
       };

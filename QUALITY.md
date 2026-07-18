@@ -1,50 +1,54 @@
-# Aiur Orchestrator quality gates
+# Agent Blocks quality gates
 
-This repository uses pnpm 11.13.1 exclusively. The exact version is pinned in `package.json`; installs made with npm, Yarn, Bun, or a different pnpm version fail at the repository boundary.
+This repository pins Node and pnpm in `package.json`. Use the coordinated sibling layout described
+in the README: `@agentic-orch/node-guardrails` and `@agentic-orch/ts-quality` are private
+`workspace:*` dependencies resolved from `../node-guardrails` and `../ts-quality`.
 
-## Setup
+The checked-in GitHub workflow cannot recreate those unhosted sibling directories from an Agent
+Blocks checkout alone. It is retained as future automation structure, but the coordinated local
+checkout and the commands below are the current validation source of truth.
 
 ```bash
-pnpm --version
 pnpm install --frozen-lockfile
 pnpm hooks:install
 ```
 
-Use a supported Node.js release from `package.json`. CI and clean-room verification must always use `pnpm install --frozen-lockfile`.
-
 ## Gate ladder
 
-| Command                | Purpose                                                                                                   |
-| ---------------------- | --------------------------------------------------------------------------------------------------------- |
-| `pnpm quality:quick`   | Prettier check, warning-free Oxlint, strict TypeScript, and repository secret scan.                       |
-| `pnpm check`           | Quick gate plus the deterministic unit/integration test suite.                                            |
-| `pnpm quality:offline` | Quick gate, coverage thresholds, production build, and dry-run package manifest inspection.               |
-| `pnpm deps:check`      | Production advisory audit at high severity and registry-signature verification. Requires registry access. |
-| `pnpm preflight`       | Complete offline and online gate; this is the handoff/release command.                                    |
+| Command                | Purpose                                                                      |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| `pnpm quality:quick`   | Prettier, warning-free Oxlint, strict TypeScript, and secret scanning.       |
+| `pnpm check`           | Quick gate plus deterministic unit and integration tests.                    |
+| `pnpm quality:offline` | Quick gate, coverage, production build, and local package-boundary checks.   |
+| `pnpm deps:check`      | Production advisory and registry-signature checks; requires registry access. |
+| `pnpm preflight`       | Complete offline and online handoff gate.                                    |
 
-Coverage is measured over all `src/**/*.ts` files, including currently untested entrypoints. The enforced global floor is 70% statements, 55% branches, 70% functions, and 70% lines. Raising a floor is welcome; lowering one requires an explicit rationale.
+The packaging gate checks the private module's executable, declarations, and subpath exports. It is
+kept because consumers resolve those exact boundaries locally, not because the package is intended
+for a registry.
 
-`pnpm hooks:install` configures this checkout to use the committed hooks:
+Coverage includes all `src/**/*.ts`: 70% statements, 55% branches, 70% functions, and 70% lines.
+Tests use fake runtimes and temporary repositories.
 
-- pre-commit runs `pnpm quality:quick`;
-- pre-push runs `pnpm quality:offline`.
+## Shared policy
 
-The hooks are a fast local feedback layer, not the source of truth. Automation should repeat the frozen install and `pnpm preflight`.
+`@agentic-orch/ts-quality` supplies the secret scanner, package-boundary inspection, hook templates,
+strict Node TypeScript baseline, and Prettier defaults. Agent Blocks still owns its coverage floors,
+test selection, build, public exports, and Effect peer contract.
 
-## Dependency and supply-chain policy
+The small `scripts/quality/require-pnpm.mjs` guard remains local because development dependencies
+are unavailable when a clean install enters `preinstall`.
 
-`pnpm-workspace.yaml` enforces:
+## Dependency policy
 
-- exact dependency saves and an exact pnpm version;
-- Node engine and peer-dependency compatibility;
-- frozen lockfiles in CI;
-- a strict 24-hour minimum package release age;
-- rejection of transitive Git/tarball dependencies;
-- explicit review of every dependency lifecycle script;
-- dependency-state verification before scripts run.
-
-Only `esbuild` is approved to execute a third-party install script. Optional native acceleration from `msgpackr-extract` is explicitly denied. Any new lifecycle script makes installation fail until it is reviewed and recorded in `allowBuilds`.
+`pnpm-workspace.yaml` enforces exact external dependency saves, engine and peer compatibility,
+frozen automation installs, a 24-hour release-age floor for third-party packages, rejection of
+transitive Git/tarball dependencies, and explicit lifecycle-script review. The release-age policy
+does not apply to the local `workspace:*` modules.
 
 ## Secret scan scope
 
-The local scanner examines tracked and unignored files for secret-bearing filenames, private keys, common provider token formats, and non-placeholder secret assignments in configuration files. It reports only file and line metadata, never the matched value. This supplements host and repository secret-scanning controls; it does not replace them.
+The shared scanner examines staged blobs, current working-tree copies, and unignored untracked files
+for secret-bearing filenames, private keys, common token formats, and non-placeholder assignments.
+It bounds reads, never follows symlinks, and reports escaped file/line metadata without echoing the
+matched value.

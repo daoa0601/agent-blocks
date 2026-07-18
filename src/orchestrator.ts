@@ -94,7 +94,7 @@ export interface OrchestratorOptions {
 }
 
 export function defaultHarnessHome(): string {
-  return path.resolve(process.env.AIUR_HOME ?? path.join(os.homedir(), ".aiur-orchestrator"));
+  return path.resolve(process.env.AGENT_BLOCKS_HOME ?? path.join(os.homedir(), ".agent-blocks"));
 }
 
 function writeJsonArtifact(filePath: string, value: unknown): Effect.Effect<void, JournalError> {

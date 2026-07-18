@@ -4,14 +4,12 @@ import path from "node:path";
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
+import { makeRunJournal, readRunEventRecords, runDirectoryFor } from "../src/persistence.js";
 import {
   inspectRunState,
   listRuns,
-  makeRunJournal,
-  readRunEventRecords,
   readRunEvents,
-  runDirectoryFor,
-} from "../src/index.js";
+} from "../src/templates/scoped-worktree-control-plane.js";
 import { makeTempDirectory } from "./helpers.js";
 
 const AT = "2026-07-17T12:00:00.000Z";
@@ -28,7 +26,7 @@ async function writeJournal(harnessHome: string, runId: string, source: string):
 
 describe("versioned run journal", () => {
   it("accepts legacy records and an incomplete final append, but rejects complete corruption", async () => {
-    const harnessHome = await makeTempDirectory("aiur-orchestrator-journal-");
+    const harnessHome = await makeTempDirectory("agent-blocks-journal-");
     const runId = "truncated-run";
     await writeJournal(
       harnessHome,
@@ -105,7 +103,7 @@ describe("versioned run journal", () => {
   });
 
   it("redacts recursively, omits raw runtime records, and advances by canonical sequence", async () => {
-    const harnessHome = await makeTempDirectory("aiur-orchestrator-redaction-");
+    const harnessHome = await makeTempDirectory("agent-blocks-redaction-");
     const runId = "redaction-run";
     const journal = await Effect.runPromise(
       makeRunJournal(runDirectoryFor(harnessHome, runId), runId),
@@ -172,7 +170,7 @@ describe("versioned run journal", () => {
   });
 
   it("lists newest-first with a deterministic run-ID tie break and skips empty allocations", async () => {
-    const harnessHome = await makeTempDirectory("aiur-orchestrator-order-");
+    const harnessHome = await makeTempDirectory("agent-blocks-order-");
     await writeJournal(
       harnessHome,
       "run-a",

@@ -75,6 +75,18 @@ deterministic validator decides whether that request is legal.
 Closing a worker-batch scope interrupts unfinished workers. Closing the run scope removes candidate
 worktrees unless `--keep-worktrees` was explicit.
 
+The low-level no-shell process, bounded-output, timeout, and cancellation implementation comes from
+`@agentic-orch/node-guardrails/process`. Agent Blocks wraps that neutral Promise/`AbortSignal` contract with Effect
+and retains ownership of Codex events, budgets, retries, lifecycle scopes, and public errors.
+
+On POSIX, each child leads an isolated process group. A timeout, abort, or output-limit failure sends
+graceful and then forced termination to that group, including descendants that retain inherited
+pipes. On Windows, Node.js has no portable process-group or job-object equivalent, so cleanup is
+limited to the direct child and Agent Blocks's pipe endpoints; descendants may continue running. Even the
+POSIX mechanism is bounded lifecycle cleanup, not a security sandbox: hostile code can attempt to
+escape the group or use other host resources. Strong containment must come from an external OS
+sandbox, container, VM, or Windows job-object supervisor.
+
 ## Persistence
 
 Each run directory contains:
@@ -144,8 +156,10 @@ rejects tracked entries, symlinks, deletions, or candidate-created contents. Pat
 the path defensively, so neither compatibility patches nor content-addressed artifacts can contain
 the review bundle.
 
-Each capture is also published immutably as `artifacts/<sha256>.patch`. An `artifact.published` event
-records the content digest, byte size, media type, and candidate ID; the following
+Each capture is also published immutably as `artifacts/<sha256>.patch`. The shared bounded CAS
+primitive owns byte hashing, no-clobber publication, and corrupt-occupant detection; Agent Blocks owns the
+20 MiB Git-output bound, `.patch` naming, event schema, and private run-directory policy. An
+`artifact.published` event records the content digest, byte size, media type, and candidate ID; the following
 `candidate.snapshot` references that artifact ID. The mutable `candidates/<candidate-id>.patch` file
 continues to hold the latest patch for the legacy summary and CLI apply path. There is intentionally
 no arbitrary-path artifact reader in this release.

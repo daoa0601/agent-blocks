@@ -30,7 +30,7 @@ function turnResult(threadId: string, finalText: string): RuntimeTurnResult {
 describe("orchestrator", () => {
   it("runs resumable scoped candidate turns, evaluates, journals, and cleans the worktree", async () => {
     const repository = await makeGitRepository();
-    const harnessHome = await makeTempDirectory("aiur-orchestrator-home-");
+    const harnessHome = await makeTempDirectory("agent-blocks-home-");
     const calls: Array<RuntimeTurnInput> = [];
     let supervisorTurns = 0;
     let candidateTurns = 0;
@@ -174,7 +174,7 @@ describe("orchestrator", () => {
 
   it("rejects a supervisor attempt to give a candidate an out-of-scope target", async () => {
     const repository = await makeGitRepository();
-    const harnessHome = await makeTempDirectory("aiur-orchestrator-scope-");
+    const harnessHome = await makeTempDirectory("agent-blocks-scope-");
     let workerStarted = false;
     const runtime: AgentRuntime = {
       runTurn: (input) => {

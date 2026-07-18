@@ -8,9 +8,9 @@ import { describe, expect, it } from "vitest";
 import {
   HARNESS_AUDIT_MAX_BYTES,
   HARNESS_AUDIT_TRACE_PATH,
-  readRunEvents,
   runOrchestration,
-} from "../src/index.js";
+} from "../src/templates/scoped-worktree.js";
+import { readRunEvents } from "../src/templates/scoped-worktree-control-plane.js";
 import type { RuntimeTurnInput, RuntimeTurnResult, WorkflowDefinition } from "../src/domain.js";
 import { RuntimeError } from "../src/errors.js";
 import type { AgentRuntime } from "../src/runtime.js";
@@ -102,7 +102,7 @@ function privateRuntimeError(input: RuntimeTurnInput, cause: unknown): RuntimeEr
 describe("trace-based candidate audit", () => {
   it("gives a pinned reviewer a target-only multi-turn trace and declared evaluator", async () => {
     const repository = await makeGitRepository();
-    const harnessHome = await makeTempDirectory("aiur-orchestrator-audit-");
+    const harnessHome = await makeTempDirectory("agent-blocks-audit-");
     const workflow = auditWorkflow(repository);
     const calls: Array<RuntimeTurnInput> = [];
     let supervisorTurns = 0;
@@ -298,7 +298,7 @@ describe("trace-based candidate audit", () => {
 
   it("rejects a candidate that tracks or spoofs the reserved audit path", async () => {
     const repository = await makeGitRepository();
-    const harnessHome = await makeTempDirectory("aiur-orchestrator-audit-smuggle-");
+    const harnessHome = await makeTempDirectory("agent-blocks-audit-smuggle-");
     const workflow = auditWorkflow(repository);
     let candidatePrompt = "";
     let supervisorTurns = 0;
@@ -360,7 +360,7 @@ describe("trace-based candidate audit", () => {
 
   it("caps oversized traces explicitly while retaining snapshot provenance", async () => {
     const repository = await makeGitRepository();
-    const harnessHome = await makeTempDirectory("aiur-orchestrator-audit-cap-");
+    const harnessHome = await makeTempDirectory("agent-blocks-audit-cap-");
     const baseWorkflow = auditWorkflow(repository);
     const workflow: WorkflowDefinition = {
       ...baseWorkflow,
