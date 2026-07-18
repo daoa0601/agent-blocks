@@ -1,118 +1,104 @@
-# Aiur Orchestrator
+# Agent Blocks
 
-A personal TypeScript/Effect v4 harness for explicit, scoped subagent loops. Aiur owns the
-control plane; the locally installed Codex CLI supplies model turns using your existing ChatGPT
-login.
+Private TypeScript/Effect building blocks for composing agents, runtime adapters, persistence, and
+opinionated orchestrator templates. The package root is deliberately small and domain-neutral;
+Git, Codex, evaluator, and candidate-selection behavior lives under the `scoped-worktree`
+template.
 
-There is no API key, provider abstraction, or free-form nested delegation in the initial runtime.
+This repository is a local workspace module. It is not intended for npm publication.
 
-## What it does
+## Public boundaries
 
-- Runs a resumable read-only supervisor loop with schema-constrained decisions.
-- Allows the supervisor to instantiate only roles declared in workflow YAML.
-- Pins every logical agent ID to one role, Codex thread, scope, and turn budget.
-- Gives research agents the base repository read-only.
-- Gives candidate agents separate detached Git worktrees with write access.
-- Pins review agents read-only to one named candidate worktree.
-- Executes independent assignments concurrently with an Effect semaphore and scoped fibers.
-- Runs a deterministic evaluator after every candidate turn.
-- Gives candidates the declared evaluator argv for local checks, then independently evaluates their
-  snapshots in the harness.
-- Rebuilds a bounded candidate-only trace for pinned read-only reviewers to audit and empirically
-  rerun the declared evaluator.
-- Stores normalized events, raw Codex JSONL, reports, evaluations, and binary-safe patches.
-- Applies a selected patch only when `--apply` is explicit and the base repository is still clean.
+| Import                                                                    | Owns                                                                                               |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `@agentic-orch/agent-blocks`                                              | Generic `Agent`, `AgentRuntime`, `AgentTemplate`, and composition helpers.                         |
+| `@agentic-orch/agent-blocks/persistence`                                  | Validated append-only run journals and safe run IDs.                                               |
+| `@agentic-orch/agent-blocks/templates/scoped-worktree`                    | The existing bounded supervisor, Codex runtime, Git worktrees, evaluation, and selection workflow. |
+| `@agentic-orch/agent-blocks/templates/scoped-worktree/control-plane`      | Redacted queries over scoped-worktree run state and events.                                        |
+| `@agentic-orch/agent-blocks/templates/scoped-worktree/adapters/codex-cli` | The Codex CLI adapter used by that template.                                                       |
 
-## Requirements
+The root does not export scoped-worktree types. Consumers must opt into that template explicitly,
+which prevents a generic research agent from accidentally inheriting Git-worktree or candidate
+semantics.
 
-- Node.js 22.22.2+, 24.15.0+, or 26+
-- Git
-- A recent `codex` CLI authenticated through ChatGPT
+## Generic building blocks
 
-```bash
-codex login
-codex login status
+```ts
+import { Effect } from "effect";
+import { defineAgentTemplate, instantiateTemplate } from "@agentic-orch/agent-blocks";
+
+const multiplier = defineAgentTemplate({
+  id: "multiplier",
+  create: (factor: number) => ({
+    id: `multiply-by-${factor}`,
+    run: (input: number, context) =>
+      context.emit({ type: "number.multiplied", factor }).pipe(Effect.as(input * factor)),
+  }),
+});
+
+const triple = instantiateTemplate(multiplier, 3);
 ```
 
-The harness starts `codex exec --json` as a child process. Prompts go through stdin, and Codex
-reuses its own saved authentication. The harness never reads, copies, or stores credentials.
+An orchestrator supplies the `AgentContext`, owns scheduling and policy, and decides how emitted
+events are persisted. Templates are ordinary factories, so projects can start from a local recipe
+and extend it without modifying this package.
 
-## Quick start
+## Scoped-worktree template
+
+The included template retains the original, security-conscious coding workflow:
+
+- a schema-constrained, resumable supervisor can instantiate only declared roles;
+- research agents inspect the base repository read-only;
+- candidate agents edit separate detached Git worktrees;
+- reviewers are pinned read-only to one candidate;
+- concurrency, turns, rounds, wall time, output, and optional token use are bounded;
+- a trusted local evaluator runs independently of candidate claims;
+- normalized events, raw runtime events, reports, evaluations, and binary-safe patches are durable;
+- a selected patch reaches the base repository only when `--apply` is explicit and the base is
+  still clean.
+
+The Codex adapter uses the locally authenticated Codex CLI. Prompts travel over stdin and this
+package never reads, copies, or stores ChatGPT credentials.
+
+### Local checkout
+
+Keep the private dependencies as siblings:
+
+```text
+agentic-orch/
+├── agent-blocks/
+├── node-guardrails/
+└── ts-quality/
+```
+
+Then use the repository-pinned Node and pnpm versions:
 
 ```bash
 pnpm install --frozen-lockfile
 pnpm check
-pnpm aiur doctor --cwd /path/to/target-git-repo
+pnpm agent-blocks scoped-worktree doctor --cwd /path/to/target-git-repo
 cp examples/explicit-subagents.yaml my-workflow.yaml
-# Edit workspace/objective/roles/evaluation first.
-pnpm aiur run my-workflow.yaml
+pnpm agent-blocks scoped-worktree run my-workflow.yaml
 ```
 
-The default is safe comparison mode: candidate worktrees are cleaned after their patches are
-captured, and the base repository is untouched.
+The manifest uses `workspace:*`, and the lockfile records explicit `link:../...` resolutions. A
+missing sibling is therefore an installation error, not a silent registry fallback.
 
 ```bash
 # Retain candidate worktrees for manual inspection.
-pnpm aiur run my-workflow.yaml --keep-worktrees
+pnpm agent-blocks scoped-worktree run my-workflow.yaml --keep-worktrees
 
-# Apply only the accepted patch; this refuses a dirty or changed base repository.
-pnpm aiur run my-workflow.yaml --apply
+# Apply only the accepted patch.
+pnpm agent-blocks scoped-worktree run my-workflow.yaml --apply
 
 # Inspect a completed run.
-pnpm aiur inspect RUN_ID
+pnpm agent-blocks scoped-worktree inspect RUN_ID
 ```
 
-Run artifacts live under `$AIUR_HOME/runs`, or `~/.aiur-orchestrator/runs` by default.
+Run artifacts live under `$AGENT_BLOCKS_HOME/runs`, or `~/.agent-blocks/runs` by default.
 
-## Workflow shape
-
-```yaml
-version: 1
-name: focused-change
-objective: Add a validated feature without broad refactoring.
-workspace: /absolute/path/to/a/git/repository
-
-supervisor:
-  instructions: Require evidence, a passing evaluation, and an independent review.
-
-roles:
-  - id: investigator
-    kind: research
-    description: Locates relevant code and constraints.
-    instructions: Report evidence; never edit files.
-    maxInstances: 1
-    maxTurns: 2
-
-  - id: implementer
-    kind: candidate
-    description: Owns one isolated implementation candidate.
-    instructions: Make focused edits and verify them.
-    maxInstances: 2
-    maxTurns: 3
-
-  - id: reviewer
-    kind: review
-    description: Reviews exactly one candidate read-only.
-    instructions: Check correctness, scope, and regressions.
-    maxInstances: 2
-    maxTurns: 2
-
-evaluation:
-  command: ["pnpm", "test"]
-  timeoutSeconds: 600
-
-limits:
-  maxRounds: 6
-  maxConcurrentAgents: 2
-  maxTotalAgents: 6
-  maxTotalAgentTurns: 12
-  maxWallClockSeconds: 1800
-  turnTimeoutSeconds: 600
-  maxTotalTokens: 120000
-```
-
-Paths are resolved relative to the workflow YAML. See [the workflow reference](docs/workflows.md)
-and [architecture](docs/architecture.md) for the full contract.
+See [the workflow reference](docs/workflows.md), [architecture](docs/architecture.md), and
+[consumer guide](docs/consuming.md) for the detailed contracts.
 
 ## Development
 
@@ -124,20 +110,14 @@ pnpm build
 pnpm preflight
 ```
 
-The enforced formatting, coverage, package, dependency, secret, and hook policies are documented in
-[QUALITY.md](QUALITY.md).
+Tests use fake runtimes and temporary Git repositories; they do not consume ChatGPT usage. Effect
+is an exact peer because its types occur in the public API. The local packaging check remains useful
+as an export-boundary test even though the module is private.
 
-Tests use a fake runtime and temporary Git repositories. They do not consume ChatGPT usage.
+## Security boundary
 
-Effect v4 is currently a beta line, so the exact package version is pinned. Upgrade it
-intentionally and rerun the complete check suite.
-
-## Boundaries
-
-This is a personal local harness, not a multi-tenant security boundary. Codex sandboxing limits
-model-issued commands, while the configured deterministic evaluator is trusted local code. Run
-archives may contain source snippets and command output; protect `$AIUR_HOME` accordingly. See
-[security](docs/security.md).
-
-Implementation references: [Effect v4](https://github.com/Effect-TS/effect-smol) and
-[Codex non-interactive mode](https://learn.chatgpt.com/docs/non-interactive-mode).
+The scoped-worktree template is a personal local harness, not a multi-tenant containment boundary.
+The configured evaluator is trusted local code, and run archives can contain source snippets and
+command output. On POSIX, cancellation targets an isolated child process group; portable Windows
+cleanup cannot guarantee descendant termination. Put hostile workloads behind an independently
+enforced OS sandbox, container, or VM. See [security](docs/security.md).

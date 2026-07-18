@@ -39,7 +39,7 @@ budgets remain authoritative even when instructions conflict.
 ## Sensitive artifacts
 
 Raw Codex events, agent reports, evaluator output, and patches may contain proprietary source,
-paths, or secrets already present in command output. Keep `$AIUR_HOME` private and apply your own
+paths, or secrets already present in command output. Keep `$AGENT_BLOCKS_HOME` private and apply your own
 retention policy. Do not publish run archives automatically.
 
 Candidate audit bundles are trusted-role inputs with the same sensitivity as the private journal.
@@ -48,8 +48,9 @@ keep it for local inspection. Never expose `.harness-audit/trace.jsonl` through 
 
 Content-addressed patch storage provides immutable identity, not confidentiality or authorization.
 The local public projection reports only artifact descriptors and exposes no path-based artifact
-serving API. A future server that serves artifact bytes must resolve journal-published opaque IDs,
-stay beneath the artifact directory, verify file type/size/digest, and authorize every read.
+serving API. A future server that serves artifact bytes must authorize a journal-published opaque
+ID and return only bytes verified by the CAS `read()` operation; it must not verify a pathname and
+then reopen it later.
 
 The root package retains broad low-level exports for compatibility, including trusted journal and
 workspace primitives. Network-facing code should depend on the narrow `control-plane` subpath for
@@ -60,8 +61,11 @@ read-only projections and keep authentication/authorization outside browser-cont
 - Filesystem isolation relies on Codex's local sandbox and Git worktrees, not a VM or container.
 - Network policy is whatever the selected Codex sandbox/runtime provides.
 - Codex stores its resumable sessions in its own local state in addition to the harness journal.
-- A force-killed process may leave tool-specific child processes if that tool ignores process
-  termination; run inside a stronger external sandbox for hostile workloads.
+- Process termination is lifecycle cleanup, not containment. On POSIX, failures terminate the
+  isolated process group, but hostile code may attempt to escape that group. On Windows, the
+  portable implementation terminates only the direct child and closes Agent Blocks's pipe endpoints, so
+  descendants may continue running. Use an independently enforced OS sandbox, container, VM, or
+  Windows job-object supervisor for hostile or tenant-controlled workloads.
 - Journal serialization and active-run ownership are single-process. Cooperative Effect interruption
   writes a terminal interruption record, but `SIGKILL`, power loss, or storage failure can leave a
   queued/running orphan until a future lease-based recovery mechanism exists. Runs are never resumed

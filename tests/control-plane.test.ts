@@ -11,13 +11,15 @@ import { makeRunJournal } from "../src/journal.js";
 import {
   assertRunId,
   createRunId,
+  readRunEventRecords,
+  runDirectoryFor,
+} from "../src/persistence.js";
+import {
   inspectRunState,
   listRuns,
-  readRunEventRecords,
   readRunEvents,
-  runDirectoryFor,
-  runOrchestration,
-} from "../src/index.js";
+} from "../src/templates/scoped-worktree-control-plane.js";
+import { runOrchestration } from "../src/templates/scoped-worktree.js";
 import type { AgentRuntime } from "../src/runtime.js";
 import { makeGitRepository, makeTempDirectory } from "./helpers.js";
 
@@ -154,7 +156,7 @@ function gatedRuntime(): {
 
 describe("public run control surface", () => {
   it("projects in-flight token usage with the same uncached budget charge as terminal summaries", async () => {
-    const harnessHome = await makeTempDirectory("aiur-orchestrator-token-projection-");
+    const harnessHome = await makeTempDirectory("agent-blocks-token-projection-");
     const runId = "token_projection-001";
     const runDirectory = runDirectoryFor(harnessHome, runId);
     await mkdir(runDirectory, { recursive: true });
@@ -176,7 +178,7 @@ describe("public run control surface", () => {
 
   it("uses a supplied ID, exposes a running projection, redacts events, and rejects collisions", async () => {
     const repository = await makeGitRepository();
-    const harnessHome = await makeTempDirectory("aiur-orchestrator-control-");
+    const harnessHome = await makeTempDirectory("agent-blocks-control-");
     const runId = "caller_run-001";
     const gated = gatedRuntime();
     const fiber = Effect.runFork(
@@ -283,7 +285,7 @@ describe("public run control surface", () => {
 
   it("makes successive snapshots immutable while retaining the latest legacy patch", async () => {
     const repository = await makeGitRepository();
-    const harnessHome = await makeTempDirectory("aiur-orchestrator-artifacts-");
+    const harnessHome = await makeTempDirectory("agent-blocks-artifacts-");
     let supervisorTurns = 0;
     let candidateTurns = 0;
     const runtime: AgentRuntime = {
@@ -375,7 +377,7 @@ describe("public run control surface", () => {
   }, 30_000);
 
   it("keeps preflight, runtime, and interruption failures queryable without summaries", async () => {
-    const harnessHome = await makeTempDirectory("aiur-orchestrator-failures-");
+    const harnessHome = await makeTempDirectory("agent-blocks-failures-");
     const missingWorkspace = path.join(harnessHome, "missing-workspace");
     const neverRuntime: AgentRuntime = {
       runTurn: (input) =>

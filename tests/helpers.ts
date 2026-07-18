@@ -8,7 +8,7 @@ export async function makeTempDirectory(prefix: string): Promise<string> {
 }
 
 export async function makeGitRepository(): Promise<string> {
-  const repository = await makeTempDirectory("aiur-orchestrator-repo-");
+  const repository = await makeTempDirectory("agent-blocks-repo-");
   execFileSync("git", ["init", "--quiet"], { cwd: repository });
   execFileSync("git", ["config", "user.email", "harness@example.invalid"], {
     cwd: repository,

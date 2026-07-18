@@ -7,19 +7,25 @@ settings:
 importers:
   .:
     dependencies:
-      effect:
-        specifier: 4.0.0-beta.98
-        version: 4.0.0-beta.98
+      "@agentic-orch/node-guardrails":
+        specifier: workspace:*
+        version: link:../node-guardrails
       yaml:
         specifier: 2.9.0
         version: 2.9.0
     devDependencies:
+      "@agentic-orch/ts-quality":
+        specifier: workspace:*
+        version: link:../ts-quality
       "@types/node":
         specifier: 22.20.1
         version: 22.20.1
       "@vitest/coverage-v8":
         specifier: 4.1.10
         version: 4.1.10(vitest@4.1.10)
+      effect:
+        specifier: 4.0.0-beta.98
+        version: 4.0.0-beta.98
       oxlint:
         specifier: 1.74.0
         version: 1.74.0

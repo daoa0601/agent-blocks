@@ -17,7 +17,7 @@ import { makeGitRepository, makeTempDirectory } from "./helpers.js";
 describe("candidate patch transport", () => {
   it("captures a new file from an isolated worktree and applies it to an unchanged base", async () => {
     const repository = await makeGitRepository();
-    const state = await makeTempDirectory("aiur-orchestrator-workspace-");
+    const state = await makeTempDirectory("agent-blocks-workspace-");
 
     const applied = await Effect.runPromise(
       Effect.scoped(
@@ -50,7 +50,7 @@ describe("candidate patch transport", () => {
 
   it("never captures harness-owned audit state", async () => {
     const repository = await makeGitRepository();
-    const state = await makeTempDirectory("aiur-orchestrator-workspace-audit-");
+    const state = await makeTempDirectory("agent-blocks-workspace-audit-");
 
     const patch = await Effect.runPromise(
       Effect.scoped(

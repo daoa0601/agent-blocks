@@ -1,4 +1,0 @@
-#!/bin/sh
-# managed-by: agentic-orch-quality
-set -eu
-pnpm quality:quick

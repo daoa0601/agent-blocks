@@ -1,17 +1,14 @@
 {
-  "name": "aiur-orchestrator",
+  "name": "@agentic-orch/agent-blocks",
   "version": "0.1.0",
-  "description": "A personal Effect v4 harness for explicitly scoped, subscription-backed Codex subagents",
-  "type": "module",
   "private": true,
+  "description": "Local agent, runtime, and orchestrator template building blocks",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/daoa0601/aiur-orchestrator.git"
-  },
-  "homepage": "https://github.com/daoa0601/aiur-orchestrator#readme",
-  "bugs": "https://github.com/daoa0601/aiur-orchestrator/issues",
   "packageManager": "pnpm@11.13.1",
+  "prettier": "@agentic-orch/ts-quality/prettier",
   "files": [
     "dist",
     "docs",
@@ -26,11 +23,35 @@
     "pnpm": "11.13.1"
   },
   "bin": {
-    "aiur": "./dist/cli.js"
+    "agent-blocks": "./dist/cli.js"
   },
   "exports": {
-    ".": "./dist/index.js",
-    "./control-plane": "./dist/control-plane.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./persistence": {
+      "types": "./dist/persistence.d.ts",
+      "import": "./dist/persistence.js",
+      "default": "./dist/persistence.js"
+    },
+    "./templates/scoped-worktree": {
+      "types": "./dist/templates/scoped-worktree.d.ts",
+      "import": "./dist/templates/scoped-worktree.js",
+      "default": "./dist/templates/scoped-worktree.js"
+    },
+    "./templates/scoped-worktree/control-plane": {
+      "types": "./dist/templates/scoped-worktree-control-plane.d.ts",
+      "import": "./dist/templates/scoped-worktree-control-plane.js",
+      "default": "./dist/templates/scoped-worktree-control-plane.js"
+    },
+    "./templates/scoped-worktree/adapters/codex-cli": {
+      "types": "./dist/templates/scoped-worktree-codex-cli.d.ts",
+      "import": "./dist/templates/scoped-worktree-codex-cli.js",
+      "default": "./dist/templates/scoped-worktree-codex-cli.js"
+    },
+    "./package.json": "./package.json"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -40,27 +61,32 @@
     "deps:signatures": "pnpm audit signatures",
     "format": "prettier --write . --ignore-unknown",
     "format:check": "prettier --check . --ignore-unknown",
-    "aiur": "pnpm build && node --enable-source-maps dist/cli.js",
-    "hooks:install": "node scripts/quality/install-hooks.mjs",
+    "agent-blocks": "pnpm build && node --enable-source-maps dist/cli.js",
+    "hooks:install": "ts-quality hooks",
     "lint": "oxlint src tests scripts vitest.config.ts --deny-warnings",
-    "pack:check": "node scripts/quality/check-pack.mjs",
+    "pack:check": "ts-quality pack && node scripts/quality/check-pack.mjs",
     "preflight": "pnpm quality",
     "preinstall": "node scripts/quality/require-pnpm.mjs",
     "quality": "pnpm quality:offline && pnpm deps:check",
     "quality:offline": "pnpm quality:quick && pnpm test:coverage && pnpm build && pnpm pack:check",
     "quality:quick": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm secrets:scan",
-    "secrets:scan": "node scripts/quality/scan-secrets.mjs",
+    "secrets:scan": "ts-quality secrets",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "effect": "4.0.0-beta.98",
+    "@agentic-orch/node-guardrails": "workspace:*",
     "yaml": "2.9.0"
   },
+  "peerDependencies": {
+    "effect": "4.0.0-beta.98"
+  },
   "devDependencies": {
+    "@agentic-orch/ts-quality": "workspace:*",
     "@types/node": "22.20.1",
     "@vitest/coverage-v8": "4.1.10",
+    "effect": "4.0.0-beta.98",
     "oxlint": "1.74.0",
     "prettier": "3.9.5",
     "typescript": "6.0.3",

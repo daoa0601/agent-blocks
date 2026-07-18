@@ -1,5 +1,10 @@
 packages:
   - "."
+  - "../node-guardrails"
+  - "../ts-quality"
+
+linkWorkspacePackages: true
+sharedWorkspaceLockfile: false
 
 auditLevel: high
 blockExoticSubdeps: true
@@ -15,5 +20,6 @@ strictPeerDependencies: true
 verifyDepsBeforeRun: error
 
 allowBuilds:
+  "@agentic-orch/ts-quality": true
   esbuild: true
   msgpackr-extract: false

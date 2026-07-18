@@ -11,15 +11,15 @@ import { errorMessage } from "./errors.js";
 import { inspectRun } from "./inspect.js";
 import { defaultHarnessHome, runOrchestration } from "./orchestrator.js";
 
-const HELP = `aiur-orchestrator
+const HELP = `agent-blocks
 
 Usage:
-  aiur doctor [--cwd DIR] [--json]
-  aiur run WORKFLOW.yaml [--apply] [--keep-worktrees] [--home DIR] [--json]
-  aiur inspect RUN_ID [--home DIR] [--json]
-  aiur help
+  agent-blocks scoped-worktree doctor [--cwd DIR] [--json]
+  agent-blocks scoped-worktree run WORKFLOW.yaml [--apply] [--keep-worktrees] [--home DIR] [--json]
+  agent-blocks scoped-worktree inspect RUN_ID [--home DIR] [--json]
+  agent-blocks help
 
-The harness reuses the local Codex ChatGPT login. It never reads or stores an API key.`;
+The scoped-worktree template reuses the local Codex ChatGPT login. It never reads or stores an API key.`;
 
 function printHumanSummary(summary: RunSummary): void {
   process.stdout.write(
@@ -37,8 +37,18 @@ function printHumanSummary(summary: RunSummary): void {
 }
 
 async function main(): Promise<void> {
-  const [command = "help", ...args] = process.argv.slice(2);
+  const [template = "help", ...templateArgs] = process.argv.slice(2);
 
+  if (template === "help" || template === "--help" || template === "-h") {
+    process.stdout.write(`${HELP}\n`);
+    return;
+  }
+
+  if (template !== "scoped-worktree") {
+    throw new Error(`Unknown template: ${template}\n\n${HELP}`);
+  }
+
+  const [command = "help", ...args] = templateArgs;
   if (command === "help" || command === "--help" || command === "-h") {
     process.stdout.write(`${HELP}\n`);
     return;
@@ -130,6 +140,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((cause: unknown) => {
-  process.stderr.write(`aiur: ${errorMessage(cause)}\n`);
+  process.stderr.write(`agent-blocks: ${errorMessage(cause)}\n`);
   process.exitCode = 1;
 });
