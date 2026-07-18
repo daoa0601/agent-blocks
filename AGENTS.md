@@ -37,5 +37,5 @@ resumable thread.
 - Hard-bound concurrency, turns, rounds, wall time, output, and optional token use.
 - Never read or copy Codex/ChatGPT credentials; reuse the local `codex` login.
 - Tests use fake runtimes and must not consume ChatGPT usage.
-- Keep local dependencies on `workspace:*`; this package is private and is not published.
+- Keep local dependencies on `workspace:*`; this package is unpublished.
 - Use the pinned toolchain and run `pnpm preflight` before handoff.

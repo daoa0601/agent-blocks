@@ -1,6 +1,6 @@
 # Agent Blocks
 
-Private TypeScript/Effect building blocks for composing agents, runtime adapters, persistence, and
+Unpublished TypeScript/Effect building blocks for composing agents, runtime adapters, persistence, and
 opinionated orchestrator templates. The package root is deliberately small and domain-neutral;
 Git, Codex, evaluator, and candidate-selection behavior lives under the `scoped-worktree`
 template.
@@ -62,7 +62,7 @@ package never reads, copies, or stores ChatGPT credentials.
 
 ### Local checkout
 
-Keep the private dependencies as siblings:
+Keep the unpublished dependencies as siblings:
 
 ```text
 agentic-orch/
@@ -112,7 +112,7 @@ pnpm preflight
 
 Tests use fake runtimes and temporary Git repositories; they do not consume ChatGPT usage. Effect
 is an exact peer because its types occur in the public API. The local packaging check remains useful
-as an export-boundary test even though the module is private.
+as an export-boundary test even though the module is not published.
 
 ## Security boundary
 

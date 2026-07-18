@@ -1,6 +1,6 @@
 # Consuming Agent Blocks locally
 
-Agent Blocks is an ESM-only private workspace package. Consumers should use a sibling checkout and
+Agent Blocks is an ESM-only unpublished workspace package. Consumers should use a sibling checkout and
 `workspace:*`; there is no registry release sequence.
 
 ## Workspace layout
