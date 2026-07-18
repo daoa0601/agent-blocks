@@ -1,12 +1,12 @@
 # Agent Blocks quality gates
 
 This repository pins Node and pnpm in `package.json`. Use the coordinated sibling layout described
-in the README: `@agentic-orch/node-guardrails` and `@agentic-orch/ts-quality` are private
+in the README: `@agentic-orch/node-guardrails` and `@agentic-orch/ts-quality` are unpublished
 `workspace:*` dependencies resolved from `../node-guardrails` and `../ts-quality`.
 
-The checked-in GitHub workflow cannot recreate those unhosted sibling directories from an Agent
-Blocks checkout alone. It is retained as future automation structure, but the coordinated local
-checkout and the commands below are the current validation source of truth.
+The checked-in GitHub workflow recreates that layout by checking out both sibling repositories at
+audited full commit SHAs. Local development uses the coordinated sibling checkout; neither path
+falls back to a registry package.
 
 ```bash
 pnpm install --frozen-lockfile
@@ -23,7 +23,7 @@ pnpm hooks:install
 | `pnpm deps:check`      | Production advisory and registry-signature checks; requires registry access. |
 | `pnpm preflight`       | Complete offline and online handoff gate.                                    |
 
-The packaging gate checks the private module's executable, declarations, and subpath exports. It is
+The packaging gate checks the unpublished module's executable, declarations, and subpath exports. It is
 kept because consumers resolve those exact boundaries locally, not because the package is intended
 for a registry.
 
