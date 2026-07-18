@@ -18,6 +18,9 @@ jobs:
     name: Offline gates (Node ${{ matrix.node-version }})
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: agent-blocks
     strategy:
       fail-fast: false
       matrix:
@@ -28,7 +31,22 @@ jobs:
       - name: Check out source
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
+          path: agent-blocks
           persist-credentials: false
+      - name: Check out Node Guardrails
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          path: node-guardrails
+          persist-credentials: false
+          ref: e4980431b3e1a20dd94b41cb7b9914bf916f762c
+          repository: daoa0601/node-guardrails
+      - name: Check out TypeScript Quality
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          path: ts-quality
+          persist-credentials: false
+          ref: 310520ed4f106512a25b524fd1689574e97835d9
+          repository: daoa0601/ts-quality
       - name: Install pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
@@ -38,9 +56,13 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           cache: pnpm
+          cache-dependency-path: agent-blocks/pnpm-lock.yaml
           node-version: ${{ matrix.node-version }}
       - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
+      - name: Build Node Guardrails
+        working-directory: node-guardrails
+        run: pnpm build
       - name: Run offline quality gates
         run: pnpm quality:offline
 
@@ -48,11 +70,29 @@ jobs:
     name: Dependency trust gates
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: agent-blocks
     steps:
       - name: Check out source
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
+          path: agent-blocks
           persist-credentials: false
+      - name: Check out Node Guardrails
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          path: node-guardrails
+          persist-credentials: false
+          ref: e4980431b3e1a20dd94b41cb7b9914bf916f762c
+          repository: daoa0601/node-guardrails
+      - name: Check out TypeScript Quality
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          path: ts-quality
+          persist-credentials: false
+          ref: 310520ed4f106512a25b524fd1689574e97835d9
+          repository: daoa0601/ts-quality
       - name: Install pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
@@ -62,6 +102,7 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           cache: pnpm
+          cache-dependency-path: agent-blocks/pnpm-lock.yaml
           node-version: 24.15.0
       - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
