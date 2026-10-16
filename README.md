@@ -1,11 +1,9 @@
 # Agent Blocks
 
-Unpublished TypeScript/Effect building blocks for composing agents, runtime adapters, persistence, and
+TypeScript/Effect building blocks for composing agents, runtime adapters, persistence, and
 opinionated orchestrator templates. The package root is deliberately small and domain-neutral;
 Git, Codex, evaluator, and candidate-selection behavior lives under the `scoped-worktree`
 template.
-
-This repository is a local workspace module. It is not intended for npm publication.
 
 ## Public boundaries
 
@@ -113,16 +111,8 @@ content.
 
 ### Local checkout
 
-Keep the unpublished dependencies as siblings:
-
-```text
-agentic-orch/
-├── agent-blocks/
-├── node-guardrails/
-└── ts-quality/
-```
-
-Then use the repository-pinned Node and pnpm versions:
+This repository needs `node-guardrails` and `ts-quality` checked out next to it; see the catalog
+README for the sibling layout. Use the repository-pinned Node and pnpm versions:
 
 ```bash
 pnpm install --frozen-lockfile
@@ -133,7 +123,9 @@ pnpm agent-blocks scoped-worktree run my-workflow.yaml
 ```
 
 The manifest uses `workspace:*`, and the lockfile records explicit `link:../...` resolutions. A
-missing sibling is therefore an installation error, not a silent registry fallback.
+missing sibling is therefore an installation error, not a silent registry fallback. `pnpm install`
+also builds `node-guardrails` and this package through their `prepare` scripts, so no manual build
+order is needed.
 
 ```bash
 # Retain candidate worktrees for manual inspection.
@@ -162,8 +154,7 @@ pnpm preflight
 ```
 
 Tests use fake runtimes and temporary Git repositories; they do not consume ChatGPT usage. Effect
-is an exact peer because its types occur in the public API. The local packaging check remains useful
-as an export-boundary test even though the module is not published.
+is an exact peer because its types occur in the public API.
 
 ## Security boundary
 

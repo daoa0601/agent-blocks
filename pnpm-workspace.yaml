@@ -20,6 +20,5 @@ strictPeerDependencies: true
 verifyDepsBeforeRun: error
 
 allowBuilds:
-  "@agentic-orch/ts-quality": true
   esbuild: true
   msgpackr-extract: false

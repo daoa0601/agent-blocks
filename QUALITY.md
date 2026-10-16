@@ -1,12 +1,10 @@
 # Agent Blocks quality gates
 
-This repository pins Node and pnpm in `package.json`. Use the coordinated sibling layout described
-in the README: `@agentic-orch/node-guardrails` and `@agentic-orch/ts-quality` are unpublished
-`workspace:*` dependencies resolved from `../node-guardrails` and `../ts-quality`.
-
-The checked-in GitHub workflow recreates that layout by checking out both sibling repositories at
-audited full commit SHAs. Local development uses the coordinated sibling checkout; neither path
-falls back to a registry package.
+This repository pins Node and pnpm in `package.json`. `@agentic-orch/node-guardrails` and
+`@agentic-orch/ts-quality` are `workspace:*` dependencies resolved from `../node-guardrails` and
+`../ts-quality` (see the catalog README for the layout). Neither local development nor CI falls back
+to a registry package. The GitHub workflow checks both siblings out at their default branch;
+`pnpm install` builds `node-guardrails` and this package through their `prepare` scripts.
 
 ```bash
 pnpm install --frozen-lockfile
@@ -19,25 +17,21 @@ pnpm hooks:install
 | ---------------------- | ---------------------------------------------------------------------------- |
 | `pnpm quality:quick`   | Prettier, warning-free Oxlint, strict TypeScript, and secret scanning.       |
 | `pnpm check`           | Quick gate plus deterministic unit and integration tests.                    |
-| `pnpm quality:offline` | Quick gate, coverage, production build, and local package-boundary checks.   |
+| `pnpm quality:offline` | Quick gate, coverage, and production build.                                  |
 | `pnpm deps:check`      | Production advisory and registry-signature checks; requires registry access. |
 | `pnpm preflight`       | Complete offline and online handoff gate.                                    |
-
-The packaging gate checks the unpublished module's executable, declarations, and subpath exports. It is
-kept because consumers resolve those exact boundaries locally, not because the package is intended
-for a registry.
 
 Coverage includes all `src/**/*.ts`: 70% statements, 55% branches, 70% functions, and 70% lines.
 Tests use fake runtimes and temporary repositories.
 
 ## Shared policy
 
-`@agentic-orch/ts-quality` supplies the secret scanner, package-boundary inspection, hook templates,
-strict Node TypeScript baseline, and Prettier defaults. Agent Blocks still owns its coverage floors,
-test selection, build, public exports, and Effect peer contract.
+`@agentic-orch/ts-quality` supplies the secret scanner, hook templates, strict Node TypeScript
+baseline, and Prettier defaults. Agent Blocks still owns its coverage floors, test selection, build,
+public exports, and Effect peer contract.
 
-The small `scripts/quality/require-pnpm.mjs` guard remains local because development dependencies
-are unavailable when a clean install enters `preinstall`.
+The pnpm version is enforced natively by `packageManager`, `engines.pnpm`, and `pmOnFail: error`
+with `engineStrict` in `pnpm-workspace.yaml`.
 
 ## Dependency policy
 
