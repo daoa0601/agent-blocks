@@ -9,15 +9,6 @@
   "license": "MIT",
   "packageManager": "pnpm@11.13.1",
   "prettier": "@agentic-orch/ts-quality/prettier",
-  "files": [
-    "dist",
-    "docs",
-    "examples",
-    "scripts/quality/require-pnpm.mjs",
-    "README.md",
-    "QUALITY.md",
-    "LICENSE"
-  ],
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0",
     "pnpm": "11.13.1"
@@ -68,12 +59,11 @@
     "format:check": "prettier --check . --ignore-unknown",
     "agent-blocks": "pnpm build && node --enable-source-maps dist/cli.js",
     "hooks:install": "ts-quality hooks",
-    "lint": "oxlint src tests scripts vitest.config.ts --deny-warnings",
-    "pack:check": "ts-quality pack && node scripts/quality/check-pack.mjs",
+    "lint": "oxlint src tests vitest.config.ts --deny-warnings",
     "preflight": "pnpm quality",
-    "preinstall": "node scripts/quality/require-pnpm.mjs",
+    "prepare": "tsc -p tsconfig.build.json",
     "quality": "pnpm quality:offline && pnpm deps:check",
-    "quality:offline": "pnpm quality:quick && pnpm test:coverage && pnpm build && pnpm pack:check",
+    "quality:offline": "pnpm quality:quick && pnpm test:coverage && pnpm build",
     "quality:quick": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm secrets:scan",
     "secrets:scan": "ts-quality secrets",
     "test": "vitest run",

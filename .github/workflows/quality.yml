@@ -28,26 +28,30 @@ jobs:
           - 22.22.2
           - 24.15.0
     steps:
-      - name: Check out source
+      # Sibling workspace repositories are checked out at their default branch; the catalog's
+      # submodule pins are the reproducible record of a coordinated set.
+      - &checkout-source
+        name: Check out source
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           path: agent-blocks
           persist-credentials: false
-      - name: Check out Node Guardrails
+      - &checkout-node-guardrails
+        name: Check out Node Guardrails
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           path: node-guardrails
           persist-credentials: false
-          ref: e4980431b3e1a20dd94b41cb7b9914bf916f762c
           repository: daoa0601/node-guardrails
-      - name: Check out TypeScript Quality
+      - &checkout-ts-quality
+        name: Check out TypeScript Quality
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           path: ts-quality
           persist-credentials: false
-          ref: 310520ed4f106512a25b524fd1689574e97835d9
           repository: daoa0601/ts-quality
-      - name: Install pnpm
+      - &install-pnpm
+        name: Install pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
           run_install: false
@@ -58,11 +62,10 @@ jobs:
           cache: pnpm
           cache-dependency-path: agent-blocks/pnpm-lock.yaml
           node-version: ${{ matrix.node-version }}
-      - name: Install frozen dependencies
+      # Installing also builds Node Guardrails and Agent Blocks through their prepare scripts.
+      - &install-dependencies
+        name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build Node Guardrails
-        working-directory: node-guardrails
-        run: pnpm build
       - name: Run offline quality gates
         run: pnpm quality:offline
 
@@ -74,37 +77,16 @@ jobs:
       run:
         working-directory: agent-blocks
     steps:
-      - name: Check out source
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          path: agent-blocks
-          persist-credentials: false
-      - name: Check out Node Guardrails
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          path: node-guardrails
-          persist-credentials: false
-          ref: e4980431b3e1a20dd94b41cb7b9914bf916f762c
-          repository: daoa0601/node-guardrails
-      - name: Check out TypeScript Quality
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          path: ts-quality
-          persist-credentials: false
-          ref: 310520ed4f106512a25b524fd1689574e97835d9
-          repository: daoa0601/ts-quality
-      - name: Install pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
-        with:
-          run_install: false
-          version: 11.13.1
+      - *checkout-source
+      - *checkout-node-guardrails
+      - *checkout-ts-quality
+      - *install-pnpm
       - name: Install Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           cache: pnpm
           cache-dependency-path: agent-blocks/pnpm-lock.yaml
           node-version: 24.15.0
-      - name: Install frozen dependencies
-        run: pnpm install --frozen-lockfile
+      - *install-dependencies
       - name: Audit advisories and registry signatures
         run: pnpm deps:check

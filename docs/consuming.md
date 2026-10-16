@@ -1,30 +1,13 @@
 # Consuming Agent Blocks locally
 
-Agent Blocks is an ESM-only unpublished workspace package. Consumers should use a sibling checkout and
-`workspace:*`; there is no registry release sequence.
+Agent Blocks is an ESM-only workspace package. Consumers link a sibling checkout with
+`workspace:*`.
 
-## Workspace layout
+## Linking
 
-```text
-agentic-orch/
-├── agent-blocks/
-├── consuming-project/
-├── node-guardrails/
-└── ts-quality/
-```
-
-Add the sibling to the consumer's `pnpm-workspace.yaml`:
-
-```yaml
-packages:
-  - "."
-  - "../agent-blocks"
-  - "../node-guardrails"
-  - "../ts-quality"
-
-linkWorkspacePackages: true
-sharedWorkspaceLockfile: false
-```
+A consumer lists `../agent-blocks`, `../node-guardrails`, and `../ts-quality` in its own
+`pnpm-workspace.yaml` (with `linkWorkspacePackages: true` and `sharedWorkspaceLockfile: false`); the
+sibling layout is described in the catalog README.
 
 Declare only the boundary the consumer needs:
 
@@ -88,18 +71,9 @@ policy is not a substitute for an OS sandbox or VM.
 Network-facing integrations should prefer the redacted control-plane projection. The private
 journal reader exposes raw trusted records and belongs only in trusted local code.
 
-## Validation
+## Build
 
-Build Agent Blocks before typechecking a consumer that resolves package exports from `dist/`:
-
-```bash
-cd ../agent-blocks
-pnpm build
-pnpm check
-
-cd ../consuming-project
-pnpm install --frozen-lockfile
-pnpm check
-```
-
-`pnpm pack` smoke tests remain export-contract checks; they do not imply publication intent.
+Package exports resolve to the compiled `dist/`. Both Agent Blocks and Node Guardrails declare a
+`prepare` script, and pnpm runs workspace projects' `prepare` scripts in dependency order during
+`pnpm install`, so a consumer's ordinary install produces both `dist/` trees. After editing Agent
+Blocks sources, run `pnpm build` here to refresh the output a consumer sees.
